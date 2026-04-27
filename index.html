@@ -145,7 +145,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <div class="page" id="page-entry">
   <div class="page-header">
     <div class="page-title">ใส่ไอเทมเข้ากระเป๋า</div>
-    <div class="page-sub">เลือกผู้เล่น → ช่อง → กรอกไอเทม → กดยืนยัน</div>
+    <div class="page-sub">เลือกผู้เล่น → ช่องว่าง → กรอกไอเทมชนิดเดียว จำนวนไม่เกิน 10 → กดยืนยัน</div>
   </div>
   <div class="entry-layout">
     <div class="card">
@@ -170,15 +170,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <div class="divider"></div>
       <div class="section-label">ไอเทม</div>
       <div id="itemInputs"></div>
-      <button class="btn btn-ghost btn-sm" onclick="addItemRow()" style="margin-top:8px;width:100%;justify-content:center;">+ เพิ่มไอเทม</button>
+      <p style="font-size:12px;color:var(--text3);margin-top:8px;line-height:1.5;">กฎกระเป๋า: 1 ช่องใส่ไอเทมได้เพียง 1 ชนิด และจำนวนสูงสุด 10 ชิ้น หากช่องนั้นมีของอยู่แล้วจะไม่สามารถใส่ของเพิ่มได้</p>
       <div class="divider"></div>
-      <div class="form-group">
-        <label class="form-label">ประเภท</label>
-        <select class="form-select" id="entryType" onchange="refreshPreview()">
-          <option value="deposit">โอนเข้า</option>
-          <option value="withdraw">ถอนออก</option>
-        </select>
-      </div>
+      <input type="hidden" id="entryType" value="deposit">
       <button class="btn btn-primary" onclick="submitEntry()">✓ ยืนยัน</button>
     </div>
     <div>
@@ -188,11 +182,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
           <div class="empty-state" style="padding:24px 0;"><p>เลือกผู้เล่นและช่องกระเป๋า</p></div>
         </div>
       </div>
-      <div class="card" style="margin-top:14px;">
-        <div class="form-title">⚡ ล้างกระเป๋าทั้งช่อง</div>
-        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">ลบไอเทมทั้งหมดในช่องที่เลือกออก</p>
-        <button class="btn btn-danger btn-sm" onclick="clearBag()" style="width:100%;justify-content:center;">ล้างช่องที่เลือก</button>
-      </div>
+
     </div>
   </div>
 </div>
@@ -369,15 +359,15 @@ function renderEntryDropdown() {
 
 window.addItemRow = function() {
   const container = document.getElementById('itemInputs');
+  container.innerHTML = ''; // กฎใหม่: หน้าใส่ไอเทมเพิ่มได้ครั้งละ 1 ชนิดเท่านั้น
   const rowId = 'ir_'+(++itemRowCount);
   const div = document.createElement('div');
   div.id = rowId;
-  div.style.cssText = 'display:grid;grid-template-columns:1fr 64px 52px 30px;gap:6px;margin-bottom:6px;align-items:center;';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 72px 58px;gap:6px;margin-bottom:6px;align-items:center;';
   div.innerHTML = `
     <input type="text" class="form-input item-name" placeholder="ชื่อไอเทม" oninput="refreshPreview()" style="padding:8px 10px;font-size:13px;">
-    <input type="number" class="form-input item-qty" placeholder="จำนวน" min="1" value="1" oninput="refreshPreview()" style="padding:8px 6px;font-size:13px;text-align:center;">
-    <input type="text" class="form-input item-unit" placeholder="หน่วย" oninput="refreshPreview()" style="padding:8px 6px;font-size:13px;text-align:center;">
-    <button onclick="removeRow('${rowId}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0;line-height:1;">×</button>`;
+    <input type="number" class="form-input item-qty" placeholder="จำนวน" min="1" max="10" value="1" oninput="refreshPreview()" style="padding:8px 6px;font-size:13px;text-align:center;">
+    <input type="text" class="form-input item-unit" placeholder="หน่วย" oninput="refreshPreview()" style="padding:8px 6px;font-size:13px;text-align:center;">`;
   container.appendChild(div);
 };
 
@@ -386,7 +376,7 @@ window.removeRow = function(id){ const el=document.getElementById(id); if(el){el
 function getItemRows(){
   return [...document.querySelectorAll('#itemInputs > div')].map(row=>({
     name: row.querySelector('.item-name').value.trim(),
-    qty: parseInt(row.querySelector('.item-qty').value)||1,
+    qty: Math.min(10, Math.max(1, parseInt(row.querySelector('.item-qty').value)||1)),
     unit: row.querySelector('.item-unit').value.trim()
   })).filter(r=>r.name);
 }
@@ -406,50 +396,54 @@ function refreshPreview() {
   if (!player) return;
   const bag = (player.bags||[])[parseInt(bagIdx)] || [];
   const newItems = getItemRows();
-  const type = document.getElementById('entryType').value;
-  const merged = bag.map(it=>({...it}));
-  newItems.forEach(ni=>{
-    const ex = merged.find(m=>m.name===ni.name);
-    if (type==='deposit'){ if(ex){ex.qty=ni.qty;ex.unit=ni.unit;}else merged.push({...ni}); }
-    else { if(ex) ex.qty=Math.max(0,ex.qty-ni.qty); }
-  });
-  const final = merged.filter(m=>m.qty>0);
-  const rows = final.map(it=>{
-    const isNew = newItems.find(n=>n.name===it.name);
-    return `<div class="preview-item-row ${isNew?'highlight':''}"><span>${it.name}</span><span class="qty-pill">${it.qty}${it.unit||''}</span></div>`;
-  }).join('')||'<div style="color:var(--text3);font-size:13px;padding:8px 0;">ว่าง</div>';
-  content.innerHTML=`<div class="preview-bag-label">${BAG_ICONS[parseInt(bagIdx)]} ${BAG_NAMES[parseInt(bagIdx)]} — ${player.name}</div><div class="preview-bag">${rows}</div>${newItems.length?'<p style="font-size:11px;color:var(--gold);margin-top:8px;">✦ สีทอง = ไอเทมที่จะเปลี่ยนแปลง</p>':''}`;
+
+  if (bag.length > 0) {
+    const rows = bag.map(it=>`<div class="preview-item-row"><span>${it.name}</span><span class="qty-pill">${it.qty}${it.unit||''}</span></div>`).join('');
+    content.innerHTML=`<div class="preview-bag-label">${BAG_ICONS[parseInt(bagIdx)]} ${BAG_NAMES[parseInt(bagIdx)]} — ${player.name}</div><div class="preview-bag">${rows}</div><p style="font-size:12px;color:var(--red);margin-top:8px;line-height:1.5;">ช่องนี้มีไอเทมอยู่แล้ว จึงใส่ของเพิ่มไม่ได้ กรุณาเลือกช่องว่าง</p>`;
+    return;
+  }
+
+  if (!newItems.length) {
+    content.innerHTML=`<div class="preview-bag-label">${BAG_ICONS[parseInt(bagIdx)]} ${BAG_NAMES[parseInt(bagIdx)]} — ${player.name}</div><div class="preview-bag"><div style="color:var(--text3);font-size:13px;padding:8px 0;">ช่องว่าง — พร้อมใส่ไอเทม 1 ชนิด สูงสุด 10 ชิ้น</div></div>`;
+    return;
+  }
+
+  const ni = newItems[0];
+  const row = `<div class="preview-item-row highlight"><span>${ni.name}</span><span class="qty-pill">${ni.qty}${ni.unit||''}</span></div>`;
+  content.innerHTML=`<div class="preview-bag-label">${BAG_ICONS[parseInt(bagIdx)]} ${BAG_NAMES[parseInt(bagIdx)]} — ${player.name}</div><div class="preview-bag">${row}</div><p style="font-size:11px;color:var(--gold);margin-top:8px;">✦ ไอเทมที่จะใส่ในช่องว่างนี้</p>`;
 }
 
 window.submitEntry = async function() {
   const pid = document.getElementById('entryPlayer').value;
   const bagIdx = parseInt(document.getElementById('entryBag').value);
-  const type = document.getElementById('entryType').value;
   const items = getItemRows();
   if (!pid) return showToast('กรุณาเลือกผู้เล่น','error');
   if (isNaN(bagIdx)) return showToast('กรุณาเลือกช่องกระเป๋า','error');
-  if (!items.length) return showToast('กรุณาใส่ไอเทมอย่างน้อย 1 รายการ','error');
+  if (!items.length) return showToast('กรุณาใส่ไอเทม 1 รายการ','error');
+  if (items.length > 1) return showToast('ใส่ได้ครั้งละ 1 ชนิดเท่านั้น','error');
+
+  const item = items[0];
+  if (item.qty < 1 || item.qty > 10) return showToast('จำนวนต้องอยู่ระหว่าง 1-10 ชิ้น','error');
 
   const player = players.find(p=>p.id===pid);
   const bags = (player.bags||[]).map(b=>[...b]);
   while(bags.length<5) bags.push([]);
-  const bag = bags[bagIdx];
+  const bag = bags[bagIdx] || [];
 
-  items.forEach(ni=>{
-    const ex = bag.find(it=>it.name===ni.name);
-    if (type==='deposit'){ if(ex){ex.qty=ni.qty;ex.unit=ni.unit;}else bag.push({name:ni.name,qty:ni.qty,unit:ni.unit}); }
-    else { if(ex){ex.qty=Math.max(0,ex.qty-ni.qty);} }
-  });
-  bags[bagIdx] = bag.filter(it=>it.qty>0);
+  // กฎใหม่: หากช่องกระเป๋ามีของอยู่แล้ว ห้ามใส่ของเพิ่ม แม้จะเป็นไอเทมชนิดเดียวกัน
+  if (bag.length > 0) return showToast('ช่องนี้มีของอยู่แล้ว กรุณาเลือกช่องว่าง','error');
+
+  // กฎใหม่: 1 ช่อง = ไอเทมชนิดเดียวกันสูงสุด 10 ชิ้น
+  bags[bagIdx] = [{name:item.name, qty:item.qty, unit:item.unit}];
 
   setSyncStatus('syncing');
   try {
     await setDoc(doc(db,'players',pid), {...player, bags}, {merge:true});
     await addDoc(collection(db,'logs'), {
       time: timeStr(), ts: Date.now(),
-      playerName: player.name, bagIdx, type, items
+      playerName: player.name, bagIdx, type:'deposit', items:[item]
     });
-    showToast(`✓ บันทึกแล้ว — ${player.name} ${BAG_NAMES[bagIdx]}`,'success');
+    showToast(`✓ ใส่ ${item.name} ×${item.qty} ใน ${BAG_NAMES[bagIdx]} แล้ว`,'success');
     document.getElementById('itemInputs').innerHTML='';
     itemRowCount=0; addItemRow(); refreshPreview();
   } catch(e){ showToast('เกิดข้อผิดพลาด: '+e.message,'error'); }
