@@ -21,11 +21,11 @@ body{
 }
 .nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;padding:0 24px;background:rgba(15,10,25,.94);border-bottom:1px solid rgba(245,199,106,.25);box-shadow:0 10px 30px rgba(0,0,0,.45);}
 .nav-logo{font-family:var(--font-head);font-size:20px;font-weight:700;color:var(--gold2);padding:15px 22px 15px 0;margin-right:12px;border-right:1px solid rgba(245,199,106,.22);white-space:nowrap;}
-.nav-tabs{display:flex;gap:4px;padding:8px 0;}
-.nav-tab{padding:8px 18px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);border:1px solid transparent;background:none;font-family:var(--font);}
+.nav-tabs{display:flex;gap:4px;padding:8px 0;overflow-x:auto;}
+.nav-tab{padding:8px 18px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);border:1px solid transparent;background:none;font-family:var(--font);white-space:nowrap;}
 .nav-tab:hover{background:rgba(155,108,255,.12);color:var(--text);}
 .nav-tab.active{background:linear-gradient(135deg,rgba(245,199,106,.18),rgba(155,108,255,.16));color:var(--gold2);border-color:rgba(245,199,106,.45);}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);margin-left:auto;margin-right:6px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);margin-left:auto;margin-right:6px;flex-shrink:0;}
 .sync-dot.online{background:var(--green);}
 .sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
@@ -65,10 +65,10 @@ body{
 .btn-gold{background:rgba(245,199,106,.12);color:var(--gold2);border:1px solid rgba(245,199,106,.32);}
 .preview-bag{background:#100b1b;border:1px solid rgba(245,199,106,.20);border-radius:var(--radius-sm);padding:12px;min-height:100px;}
 .preview-bag-label{font-size:11px;color:var(--gold2);font-weight:600;margin-bottom:8px;}
-.preview-item-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(245,199,106,.12);font-size:13px;}
+.preview-item-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(245,199,106,.12);font-size:13px;gap:10px;}
 .preview-item-row:last-child{border-bottom:none;}
 .preview-item-row.highlight{color:var(--gold2);}
-.qty-pill{background:rgba(245,199,106,.14);color:var(--gold2);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;}
+.qty-pill{background:rgba(245,199,106,.14);color:var(--gold2);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
 .players-list{display:flex;flex-direction:column;gap:10px;}
 .player-row{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid rgba(245,199,106,.20);border-radius:var(--radius);padding:12px 16px;}
 .player-row-info{flex:1;}
@@ -109,7 +109,9 @@ body{
   .entry-layout{grid-template-columns:1fr;}
   .nav{padding:0 12px;overflow-x:auto;}
   .nav-logo{font-size:17px;}
-  .nav-tab{padding:8px 12px;white-space:nowrap;}
+  .nav-tab{padding:8px 12px;}
+  .sync-label{display:none;}
+  .overview-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -122,8 +124,8 @@ body{
     <button class="nav-tab active" onclick="showPage('overview',this)">ภาพรวม</button>
     <button class="nav-tab" onclick="showPage('entry',this)">ใส่ไอเทม</button>
     <button class="nav-tab" onclick="showPage('withdraw',this)">ถอนไอเทม</button>
-    <button class="nav-tab" onclick="showPage('players',this)">จัดการผู้เล่น</button>
-    <button class="nav-tab" onclick="showPage('log',this)">ประวัติ</button>
+    <button class="nav-tab" onclick="showPage('players',this)">🔒 จัดการผู้เล่น</button>
+    <button class="nav-tab" onclick="showPage('log',this)">🔒 ประวัติ</button>
   </div>
   <div class="sync-dot" id="syncDot"></div>
   <span class="sync-label" id="syncLabel">กำลังเชื่อมต่อ...</span>
@@ -225,7 +227,7 @@ body{
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div>
         <div class="page-title">จัดการผู้เล่น</div>
-        <div class="page-sub">เพิ่ม แก้ไข หรือลบผู้เล่น</div>
+        <div class="page-sub">หน้านี้ล็อกด้วยรหัสผ่าน</div>
       </div>
       <button class="btn btn-gold" onclick="openAddPlayer()">+ เพิ่มผู้เล่น</button>
     </div>
@@ -238,7 +240,7 @@ body{
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div>
         <div class="page-title">ประวัติรายการ</div>
-        <div class="page-sub">บันทึกการใส่/ถอนไอเทมทั้งหมด</div>
+        <div class="page-sub">หน้านี้ล็อกด้วยรหัสผ่าน</div>
       </div>
       <button class="btn btn-danger btn-sm" onclick="clearLog()">ล้างประวัติ</button>
     </div>
@@ -276,6 +278,8 @@ import {
   query, orderBy, limit, getDocs, writeBatch, runTransaction
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
+const ADMIN_PASSWORD = '1234';
+
 const firebaseConfig = {
   apiKey: "AIzaSyDaGO2hV8h-Ui70lV_UuBDbAxkbXpNdgAM",
   authDomain: "tycm-inventory.firebaseapp.com",
@@ -295,14 +299,15 @@ const AV = ['av0','av1','av2','av3','av4','av5','av6','av7'];
 let players = [];
 let logs = [];
 let editingPlayerId = null;
+let adminUnlocked = false;
 
-function emptyBags(){
-  return {"0":null,"1":null,"2":null,"3":null,"4":null};
-}
+function emptyBags(){ return {"0":null,"1":null,"2":null,"3":null,"4":null}; }
+
 function cleanItem(item){
   if(!item || typeof item !== 'object') return null;
   return {name:String(item.name || ''), qty:Number(item.qty || 1), unit:String(item.unit || '')};
 }
+
 function normalizeBags(bags){
   if(!bags) return emptyBags();
   if(Array.isArray(bags)){
@@ -322,19 +327,25 @@ function normalizeBags(bags){
     "4": Array.isArray(bags["4"]) ? cleanItem(bags["4"][0]) : cleanItem(bags["4"])
   };
 }
+
 function bagsToArray(bags){
   const b = normalizeBags(bags);
   return [b["0"], b["1"], b["2"], b["3"], b["4"]];
 }
+
 function normalizeName(name){ return String(name || '').trim().replace(/\s+/g,' '); }
+
 function playerDocIdFromName(name){
   return normalizeName(name).toLowerCase().replace(/[\/\\#?\[\].]/g,'-').replace(/\s+/g,'_').slice(0,80);
 }
+
 function initials(n){ return normalizeName(n).slice(0,2).toUpperCase() || '??'; }
 function avClass(i){ return AV[i % AV.length]; }
+
 function timeStr(){
   return new Date().toLocaleString('th-TH',{hour12:false,day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
+
 function setSyncStatus(status){
   const dot = document.getElementById('syncDot');
   const label = document.getElementById('syncLabel');
@@ -342,16 +353,30 @@ function setSyncStatus(status){
   else if(status === 'syncing'){ dot.className='sync-dot syncing'; label.textContent='กำลังบันทึก...'; }
   else{ dot.className='sync-dot'; label.textContent='ออฟไลน์'; }
 }
+
 function showToast(msg,type=''){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show ' + type;
   setTimeout(()=>{ t.className='toast'; },2400);
 }
+
 function escapeHtml(str){
   return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
 }
 function escapeAttr(str){ return escapeHtml(str).replaceAll('`','&#096;'); }
+
+function requireAdmin(){
+  if(adminUnlocked) return true;
+  const pass = prompt('กรอกรหัสผ่านสำหรับผู้ดูแล');
+  if(pass === ADMIN_PASSWORD){
+    adminUnlocked = true;
+    showToast('ปลดล็อกแล้ว','success');
+    return true;
+  }
+  if(pass !== null) showToast('รหัสผ่านไม่ถูกต้อง','error');
+  return false;
+}
 
 onSnapshot(collection(db,'players'), snap=>{
   players = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0));
@@ -370,10 +395,14 @@ onSnapshot(query(collection(db,'logs'),orderBy('ts','desc'),limit(200)), snap=>{
 });
 
 window.showPage = function(id,btn){
+  if((id === 'players' || id === 'log') && !requireAdmin()) return;
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
+
   if(id === 'entry'){ renderPlayerNameList(); refreshPreview(); }
   if(id === 'withdraw'){ renderWithdrawPlayers(); refreshWithdrawPreview(); }
 };
@@ -384,13 +413,17 @@ function renderOverview(){
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">☯</div><p>ยังไม่มีผู้เล่น</p></div>';
     return;
   }
+
   grid.innerHTML = players.map((p,pi)=>{
     const bags = bagsToArray(p.bags);
     const total = bags.reduce((a,it)=>a+(it ? (it.qty||0) : 0),0);
     const bagsHtml = bags.map((it,bi)=>{
-      const inner = it ? `<div class="bag-item-chip"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(it.name)}</span><span class="qty">${it.qty}${escapeHtml(it.unit||'')}</span></div>` : '<span class="bag-empty">ว่าง</span>';
+      const inner = it
+        ? `<div class="bag-item-chip"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(it.name)}</span><span class="qty">${it.qty}${escapeHtml(it.unit||'')}</span></div>`
+        : '<span class="bag-empty">ว่าง</span>';
       return `<div class="bag-cell"><div class="bag-cell-label">${BAG_ICONS[bi]} ${bi+1}</div><div>${inner}</div></div>`;
     }).join('');
+
     return `<div class="player-card">
       <div class="player-card-head">
         <div class="player-avatar ${avClass(pi)}">${initials(p.name)}</div>
@@ -422,14 +455,17 @@ function refreshPreview(){
   const unit = normalizeName(document.getElementById('itemUnit')?.value || '');
   const content = document.getElementById('previewContent');
   if(!content) return;
+
   if(!name || bagIdxRaw === ''){
     content.innerHTML = '<div class="empty-state" style="padding:24px 0;"><p>กรอกชื่อผู้เล่นและเลือกช่องกระเป๋า</p></div>';
     return;
   }
+
   const player = players.find(p=>normalizeName(p.name) === name);
   const bagIdx = parseInt(bagIdxRaw);
   const bagsObj = player ? normalizeBags(player.bags) : emptyBags();
   const bag = bagsObj[String(bagIdx)];
+
   let status = '', rows = '';
   if(bag){
     rows = `<div class="preview-item-row"><span>${escapeHtml(bag.name)}</span><span class="qty-pill">${bag.qty}${escapeHtml(bag.unit||'')}</span></div>`;
@@ -440,6 +476,7 @@ function refreshPreview(){
   }else{
     rows = '<div style="color:var(--text3);font-size:13px;padding:8px 0;">ช่องนี้ว่าง</div>';
   }
+
   content.innerHTML = `<div class="preview-bag-label">${BAG_ICONS[bagIdx]} ${BAG_NAMES[bagIdx]} — ${escapeHtml(name)}</div><div class="preview-bag">${rows}</div>${player ? '' : '<p style="font-size:12px;color:var(--purple2);margin-top:10px;">ผู้เล่นใหม่นี้จะถูกสร้างอัตโนมัติเมื่อกดบันทึก</p>'}${status}`;
 }
 
@@ -449,6 +486,7 @@ window.submitEntry = async function(){
   const itemName = normalizeName(document.getElementById('itemName').value || '');
   let qty = parseInt(document.getElementById('itemQty').value) || 1;
   const unit = normalizeName(document.getElementById('itemUnit').value || '');
+
   if(!name) return showToast('กรุณาใส่ชื่อผู้เล่น','error');
   if(isNaN(bagIdx)) return showToast('กรุณาเลือกช่องกระเป๋า','error');
   if(!itemName) return showToast('กรุณาใส่ชื่อไอเทม','error');
@@ -458,37 +496,50 @@ window.submitEntry = async function(){
   const pid = playerDocIdFromName(name);
   const playerRef = doc(db,'players',pid);
   setSyncStatus('syncing');
+
   try{
     await runTransaction(db, async(transaction)=>{
       const snap = await transaction.get(playerRef);
       let safeBags = emptyBags();
       let order = Date.now();
+
       if(snap.exists()){
         const old = snap.data();
         safeBags = normalizeBags(old.bags);
         order = old.order || Date.now();
       }
+
       const bagKey = String(bagIdx);
       if(safeBags[bagKey]) throw new Error('ช่องนี้มีของอยู่แล้ว');
+
       safeBags[bagKey] = {name:itemName, qty:Number(qty), unit:String(unit || '')};
       transaction.set(playerRef,{name:String(name),order:Number(order),bags:safeBags});
     });
-    await addDoc(collection(db,'logs'),{time:timeStr(),ts:Date.now(),playerName:String(name),bagIdx:Number(bagIdx),type:'deposit',itemsText:String(`${itemName}×${qty}${unit || ''}`)});
+
+    await addDoc(collection(db,'logs'),{
+      time:timeStr(),ts:Date.now(),playerName:String(name),bagIdx:Number(bagIdx),
+      type:'deposit',itemsText:String(`${itemName}×${qty}${unit || ''}`)
+    });
+
     showToast(`✓ บันทึกแล้ว — ${name} ${BAG_NAMES[bagIdx]}`,'success');
     document.getElementById('itemName').value = '';
     document.getElementById('itemQty').value = '1';
     document.getElementById('itemUnit').value = '';
     refreshPreview();
-  }catch(e){ showToast(e.message || 'เกิดข้อผิดพลาด','error'); }
+  }catch(e){
+    showToast(e.message || 'เกิดข้อผิดพลาด','error');
+  }
+
   setSyncStatus('online');
 };
 
 function renderWithdrawPlayers(){
   const sel = document.getElementById('withdrawPlayer');
   if(!sel) return;
+
   const cur = sel.value;
   sel.innerHTML = '<option value="">— เลือกผู้เล่น —</option>' + players.map(p=>`<option value="${escapeAttr(p.id)}">${escapeHtml(p.name)}</option>`).join('');
-  if(cur) sel.value = cur;
+  if(cur && players.some(p=>p.id === cur)) sel.value = cur;
   renderWithdrawBags();
 }
 
@@ -501,17 +552,20 @@ function renderWithdrawBags(){
   const playerId = document.getElementById('withdrawPlayer')?.value || '';
   const bagSel = document.getElementById('withdrawBag');
   if(!bagSel) return;
+
   const cur = bagSel.value;
   const player = players.find(p=>p.id === playerId);
   const bags = player ? bagsToArray(player.bags) : [];
+
   let options = '<option value="">— เลือกช่อง —</option>';
   bags.forEach((it,idx)=>{
     if(it){
       options += `<option value="${idx}">${BAG_ICONS[idx]} ${BAG_NAMES[idx]} — ${escapeHtml(it.name)} ×${it.qty}${escapeHtml(it.unit||'')}</option>`;
     }
   });
+
   bagSel.innerHTML = options;
-  if(cur) bagSel.value = cur;
+  if(cur && [...bagSel.options].some(o=>o.value === cur)) bagSel.value = cur;
 }
 
 window.refreshWithdrawPreview = refreshWithdrawPreview;
@@ -521,23 +575,29 @@ function refreshWithdrawPreview(){
   const qty = parseInt(document.getElementById('withdrawQty')?.value) || 1;
   const content = document.getElementById('withdrawPreviewContent');
   if(!content) return;
+
   if(!playerId || bagIdxRaw === ''){
     content.innerHTML = '<div class="empty-state" style="padding:24px 0;"><p>เลือกผู้เล่นและช่องกระเป๋า</p></div>';
     return;
   }
+
   const player = players.find(p=>p.id === playerId);
   if(!player){
     content.innerHTML = '<div class="empty-state" style="padding:24px 0;"><p>ไม่พบผู้เล่น</p></div>';
     return;
   }
+
   const bagIdx = parseInt(bagIdxRaw);
   const bag = normalizeBags(player.bags)[String(bagIdx)];
+
   if(!bag){
     content.innerHTML = '<div class="empty-state" style="padding:24px 0;"><p>ช่องนี้ไม่มีไอเทมให้ถอน</p></div>';
     return;
   }
+
   const withdrawQty = Math.min(Math.max(qty,1), bag.qty);
   const remain = bag.qty - withdrawQty;
+
   content.innerHTML = `
     <div class="preview-bag-label">${BAG_ICONS[bagIdx]} ${BAG_NAMES[bagIdx]} — ${escapeHtml(player.name)}</div>
     <div class="preview-bag">
@@ -548,18 +608,14 @@ function refreshWithdrawPreview(){
   `;
 }
 
-window.submitWithdraw = async function(){
-  await doWithdraw(false);
-};
-
-window.withdrawAll = async function(){
-  await doWithdraw(true);
-};
+window.submitWithdraw = async function(){ await doWithdraw(false); };
+window.withdrawAll = async function(){ await doWithdraw(true); };
 
 async function doWithdraw(all){
   const playerId = document.getElementById('withdrawPlayer').value;
   const bagIdx = parseInt(document.getElementById('withdrawBag').value);
   let qty = parseInt(document.getElementById('withdrawQty').value) || 1;
+
   if(!playerId) return showToast('กรุณาเลือกผู้เล่น','error');
   if(isNaN(bagIdx)) return showToast('กรุณาเลือกช่องกระเป๋า','error');
 
@@ -583,11 +639,7 @@ async function doWithdraw(all){
       const takeQty = all ? item.qty : Math.min(Math.max(qty,1), item.qty);
       const remain = item.qty - takeQty;
 
-      if(remain <= 0){
-        safeBags[bagKey] = null;
-      }else{
-        safeBags[bagKey] = {name:item.name, qty:remain, unit:item.unit || ''};
-      }
+      safeBags[bagKey] = remain <= 0 ? null : {name:item.name, qty:remain, unit:item.unit || ''};
 
       transaction.set(playerRef,{
         name:String(old.name || ''),
@@ -604,12 +656,8 @@ async function doWithdraw(all){
     });
 
     await addDoc(collection(db,'logs'),{
-      time:timeStr(),
-      ts:Date.now(),
-      playerName:logData.playerName,
-      bagIdx:Number(bagIdx),
-      type:'withdraw',
-      itemsText:String(`${logData.itemName}−${logData.takeQty}${logData.unit || ''}`)
+      time:timeStr(),ts:Date.now(),playerName:logData.playerName,bagIdx:Number(bagIdx),
+      type:'withdraw',itemsText:String(`${logData.itemName}−${logData.takeQty}${logData.unit || ''}`)
     });
 
     showToast('✓ ถอนสำเร็จ','success');
@@ -623,6 +671,7 @@ async function doWithdraw(all){
 }
 
 window.openAddPlayer = function(){
+  if(!requireAdmin()) return;
   editingPlayerId = null;
   document.getElementById('modalTitle').textContent = 'เพิ่มผู้เล่นใหม่';
   document.getElementById('modalPlayerName').value = '';
@@ -631,9 +680,11 @@ window.openAddPlayer = function(){
 };
 
 window.openEditPlayer = function(id){
+  if(!requireAdmin()) return;
   editingPlayerId = id;
   const p = players.find(p=>p.id === id);
   if(!p) return;
+
   document.getElementById('modalTitle').textContent = 'แก้ไขชื่อผู้เล่น';
   document.getElementById('modalPlayerName').value = p.name;
   document.getElementById('playerModal').classList.add('open');
@@ -645,32 +696,53 @@ window.closeModal = function(){
 };
 
 window.savePlayer = async function(){
+  if(!requireAdmin()) return;
+
   const name = normalizeName(document.getElementById('modalPlayerName').value || '');
   if(!name) return showToast('กรุณาใส่ชื่อ','error');
+
   setSyncStatus('syncing');
+
   try{
     if(editingPlayerId){
       const p = players.find(p=>p.id === editingPlayerId);
       if(!p) throw new Error('ไม่พบผู้เล่น');
-      await setDoc(doc(db,'players',editingPlayerId),{name:String(name),order:Number(p.order || Date.now()),bags:normalizeBags(p.bags)});
+
+      await setDoc(doc(db,'players',editingPlayerId),{
+        name:String(name),order:Number(p.order || Date.now()),bags:normalizeBags(p.bags)
+      });
+
       showToast('✓ แก้ไขแล้ว','success');
     }else{
       const pid = playerDocIdFromName(name);
-      await setDoc(doc(db,'players',pid),{name:String(name),order:Date.now(),bags:emptyBags()});
+      await setDoc(doc(db,'players',pid),{
+        name:String(name),order:Date.now(),bags:emptyBags()
+      });
+
       showToast(`✓ เพิ่ม ${name} แล้ว`,'success');
     }
+
     closeModal();
-  }catch(e){ showToast(e.message || 'เกิดข้อผิดพลาด','error'); }
+  }catch(e){
+    showToast(e.message || 'เกิดข้อผิดพลาด','error');
+  }
+
   setSyncStatus('online');
 };
 
 window.deletePlayer = async function(id){
+  if(!requireAdmin()) return;
   if(!confirm('ลบผู้เล่นนี้และข้อมูลกระเป๋าทั้งหมด?')) return;
+
   setSyncStatus('syncing');
+
   try{
     await deleteDoc(doc(db,'players',id));
     showToast('ลบผู้เล่นแล้ว');
-  }catch(e){ showToast(e.message || 'เกิดข้อผิดพลาด','error'); }
+  }catch(e){
+    showToast(e.message || 'เกิดข้อผิดพลาด','error');
+  }
+
   setSyncStatus('online');
 };
 
@@ -680,10 +752,12 @@ function renderPlayers(){
     list.innerHTML = '<div class="empty-state"><div class="icon">☯</div><p>ยังไม่มีผู้เล่น</p></div>';
     return;
   }
+
   list.innerHTML = players.map((p,pi)=>{
     const bags = bagsToArray(p.bags);
     const total = bags.reduce((a,it)=>a+(it ? (it.qty||0) : 0),0);
     const bagSummary = bags.map((it,bi)=>`${BAG_ICONS[bi]}${it ? 1 : 0}`).join(' ');
+
     return `<div class="player-row">
       <div class="player-avatar ${avClass(pi)}">${initials(p.name)}</div>
       <div class="player-row-info"><div class="player-row-name">${escapeHtml(p.name)}</div><div class="player-row-meta">${bagSummary} · รวม ${total} ชิ้น</div></div>
@@ -701,12 +775,14 @@ function renderLog(){
     body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px;">ยังไม่มีประวัติ</td></tr>';
     return;
   }
+
   body.innerHTML = logs.map(l=>{
     const badge = l.type === 'deposit'
       ? '<span class="badge badge-in">ใส่เข้า</span>'
       : l.type === 'withdraw'
       ? '<span class="badge badge-out">ถอนออก</span>'
       : '<span class="badge badge-clear">รายการ</span>';
+
     return `<tr>
       <td style="white-space:nowrap;">${escapeHtml(l.time||'')}</td>
       <td>${escapeHtml(l.playerName||'')}</td>
@@ -718,15 +794,21 @@ function renderLog(){
 }
 
 window.clearLog = async function(){
+  if(!requireAdmin()) return;
   if(!confirm('ล้างประวัติทั้งหมด?')) return;
+
   setSyncStatus('syncing');
+
   try{
     const snap = await getDocs(collection(db,'logs'));
     const batch = writeBatch(db);
     snap.docs.forEach(d=>batch.delete(d.ref));
     await batch.commit();
     showToast('ล้างประวัติแล้ว');
-  }catch(e){ showToast(e.message || 'เกิดข้อผิดพลาด','error'); }
+  }catch(e){
+    showToast(e.message || 'เกิดข้อผิดพลาด','error');
+  }
+
   setSyncStatus('online');
 };
 
