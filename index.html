@@ -10,7 +10,6 @@
 <style>
 :root{
   --bg:#09070f;
-  --bg2:#120d1e;
   --card:#171024;
   --card2:#211534;
   --gold:#f5c76a;
@@ -668,25 +667,34 @@ function emptyBags(){
   };
 }
 
+function cleanItem(item){
+  if(!item || typeof item !== 'object') return null;
+  return {
+    name: String(item.name || ''),
+    qty: Number(item.qty || 1),
+    unit: String(item.unit || '')
+  };
+}
+
 function normalizeBags(bags){
   if(!bags) return emptyBags();
 
   if(Array.isArray(bags)){
     return {
-      "0": Array.isArray(bags[0]) ? (bags[0][0] || null) : (bags[0] || null),
-      "1": Array.isArray(bags[1]) ? (bags[1][0] || null) : (bags[1] || null),
-      "2": Array.isArray(bags[2]) ? (bags[2][0] || null) : (bags[2] || null),
-      "3": Array.isArray(bags[3]) ? (bags[3][0] || null) : (bags[3] || null),
-      "4": Array.isArray(bags[4]) ? (bags[4][0] || null) : (bags[4] || null)
+      "0": Array.isArray(bags[0]) ? cleanItem(bags[0][0]) : cleanItem(bags[0]),
+      "1": Array.isArray(bags[1]) ? cleanItem(bags[1][0]) : cleanItem(bags[1]),
+      "2": Array.isArray(bags[2]) ? cleanItem(bags[2][0]) : cleanItem(bags[2]),
+      "3": Array.isArray(bags[3]) ? cleanItem(bags[3][0]) : cleanItem(bags[3]),
+      "4": Array.isArray(bags[4]) ? cleanItem(bags[4][0]) : cleanItem(bags[4])
     };
   }
 
   return {
-    "0": Array.isArray(bags["0"]) ? (bags["0"][0] || null) : (bags["0"] || null),
-    "1": Array.isArray(bags["1"]) ? (bags["1"][0] || null) : (bags["1"] || null),
-    "2": Array.isArray(bags["2"]) ? (bags["2"][0] || null) : (bags["2"] || null),
-    "3": Array.isArray(bags["3"]) ? (bags["3"][0] || null) : (bags["3"] || null),
-    "4": Array.isArray(bags["4"]) ? (bags["4"][0] || null) : (bags["4"] || null)
+    "0": Array.isArray(bags["0"]) ? cleanItem(bags["0"][0]) : cleanItem(bags["0"]),
+    "1": Array.isArray(bags["1"]) ? cleanItem(bags["1"][0]) : cleanItem(bags["1"]),
+    "2": Array.isArray(bags["2"]) ? cleanItem(bags["2"][0]) : cleanItem(bags["2"]),
+    "3": Array.isArray(bags["3"]) ? cleanItem(bags["3"][0]) : cleanItem(bags["3"]),
+    "4": Array.isArray(bags["4"]) ? cleanItem(bags["4"][0]) : cleanItem(bags["4"])
   };
 }
 
@@ -928,42 +936,42 @@ window.submitEntry = async function(){
   try{
     await runTransaction(db, async(transaction)=>{
       const snap = await transaction.get(playerRef);
-      let playerData;
 
-      if(!snap.exists()){
-        playerData = {
-          name,
-          order: Date.now(),
-          bags: emptyBags()
-        };
-      }else{
-        playerData = snap.data();
-        playerData.bags = normalizeBags(playerData.bags);
+      let safeBags = emptyBags();
+      let order = Date.now();
+
+      if(snap.exists()){
+        const old = snap.data();
+        safeBags = normalizeBags(old.bags);
+        order = old.order || Date.now();
       }
 
       const bagKey = String(bagIdx);
-      const bag = playerData.bags[bagKey];
 
-      if(bag){
+      if(safeBags[bagKey]){
         throw new Error('ช่องนี้มีของอยู่แล้ว');
       }
 
-      playerData.bags[bagKey] = {
+      safeBags[bagKey] = {
         name:itemName,
-        qty,
-        unit
+        qty:Number(qty),
+        unit:String(unit || '')
       };
 
-      transaction.set(playerRef, playerData, {merge:true});
+      transaction.set(playerRef, {
+        name:String(name),
+        order:Number(order),
+        bags:safeBags
+      });
     });
 
     await addDoc(collection(db,'logs'),{
       time:timeStr(),
       ts:Date.now(),
-      playerName:name,
-      bagIdx,
+      playerName:String(name),
+      bagIdx:Number(bagIdx),
       type:'deposit',
-      itemsText:`${itemName}×${qty}${unit || ''}`
+      itemsText:String(`${itemName}×${qty}${unit || ''}`)
     });
 
     showToast(`✓ บันทึกแล้ว — ${name} ${BAG_NAMES[bagIdx]}`,'success');
@@ -1015,19 +1023,19 @@ window.savePlayer = async function(){
       if(!p) throw new Error('ไม่พบผู้เล่น');
 
       await setDoc(doc(db,'players',editingPlayerId),{
-        ...p,
-        bags: normalizeBags(p.bags),
-        name
-      },{merge:true});
+        name:String(name),
+        order:Number(p.order || Date.now()),
+        bags:normalizeBags(p.bags)
+      });
 
       showToast('✓ แก้ไขแล้ว','success');
     }else{
       const pid = playerDocIdFromName(name);
       await setDoc(doc(db,'players',pid),{
-        name,
+        name:String(name),
         order:Date.now(),
         bags:emptyBags()
-      },{merge:true});
+      });
 
       showToast(`✓ เพิ่ม ${name} แล้ว`,'success');
     }
